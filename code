@@ -1,0 +1,262 @@
+from enum import Enum
+import json
+from math import dist, pi
+
+data = json.load(open(r'C://Users/user/Desktop/shapes.json'))
+
+class Color(Enum):
+    RED = 'красный'
+    ORA = 'оранжевый'
+    YEL = 'желтый'
+    GRE = 'зеленый'
+    AZU = 'голубой'
+    BLU = 'синий'
+    PUR = 'фиолетовый'
+
+class Figs(Enum):
+    CIR = 'круг'
+    REC = 'прямоугольник'
+    TRI = 'треугольник'
+    SPH = 'шар'
+    PAR = 'параллелепипед'
+    TET = 'правильный тетраэдр'
+
+class Fig2d:
+    def __init__ (self, fig: Figs, color: Color, **kwargs):
+        self.fig = fig
+        self.color = color
+        self.cords = kwargs
+
+class Fig3d:
+    def __init__ (self, fig: Figs, density, **kwargs):
+        self.fig = fig
+        self.density = density
+        self.data = kwargs
+
+
+
+class Circle(Fig2d):
+    def __init__ (self, color:Color, cent, r):
+        super().__init__(Figs.CIR, color, cent=cent, r=r)
+        self.cent = cent
+        self.r = r
+
+    def perimetr(self):
+        return 2*pi*self.r
+    
+    def area(self):
+        return pi*self.r**2
+    
+    def __repr__(self):
+        return f"Окружность (центр={self.cent}, радиус={self.r}, цвет: {self.color.value})"
+
+
+class Rectangle(Fig2d):
+    def __init__ (self, color, cord_a, cord_b):
+        super().__init__(Figs.REC, color, cord_a=cord_a, cord_b=cord_b)
+        self.a = cord_a
+        self.b = cord_b
+
+    def razmer(self):
+        x1, y1 = self.a
+        x2, y2 = self.b
+        w = abs(x2 - x1)
+        h = abs(y1 - y2)
+        return w, h
+
+    def perimetr(self):
+        w, h = self.razmer()
+        return 2*(w + h)
+    
+    def area(self):
+        w, h = self.razmer()
+        return w*h
+    
+    def __repr__(self):
+        w, h = self.razmer()
+        return f"Прямоугольник (длина={w}, ширина={h}, цвет: {self.color.value})"
+
+
+
+class Triangle(Fig2d):
+    def __init__ (self, color, cord_a, cord_b, cord_c):
+        super().__init__(Figs.TRI, color, cord_a=cord_a, cord_b=cord_b, cord_c=cord_c)
+        self.cord_a = cord_a
+        self.cord_b = cord_b
+        self.cord_c = cord_c
+
+    def razmer(self):
+        a = dist(self.cord_a, self.cord_b)
+        b = dist(self.cord_b, self.cord_c)
+        c = dist(self.cord_c, self.cord_a)
+        return a, b, c
+
+    def perimetr(self):
+        a, b, c = self.razmer()
+        return a+b+c
+    
+    def area(self):
+        a, b, c = self.razmer()
+        p = self.perimetr()/2
+        return (p*(p-a)*(p-b)*(p-c))**0.5
+    
+    def __repr__(self):
+        a, b, c = self.razmer()
+        return f"Треугольник ABC (стороны AB={c}, BC={a}, CA={b}, цвет: {self.color.value})"
+    
+
+
+class Sphere(Fig3d):
+    def __init__ (self, density, r):
+        super().__init__(Figs.SPH, density, r=r)
+        self.r = r
+
+    def volume(self):
+        return (self.r**3*pi*4)/3
+    
+    def area(self):
+        return 4*pi*self.r**2
+    
+    def __repr__(self):
+        return f"Шар (радиус={self.r}, плотность={self.density})"
+    
+
+
+class Parallelepiped(Fig3d):
+    def __init__ (self, density, a, b, c):
+        super().__init__(Figs.PAR, density, a=a, b=b, c=c)
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def volume(self):
+        return self.a*self.b*self.c
+    
+    def area(self):
+        return 2*(self.a*self.b + self.a*self.c + self.c*self.b)
+    
+    def __repr__(self):
+        return f"Параллелепипед (длина={self.a}, ширина={self.b}, высота={self.c}, плотность={self.density})"
+
+
+class Tetraedr(Fig3d):
+    def __init__ (self, density, a):
+        super().__init__(Figs.TET, density, a=a)
+        self.a = a
+
+    def volume(self):
+        return (2**0.5 * self.a**3)/12
+    
+    def area(self):
+        return 3**0.5 * self.a**2
+    
+    def __repr__(self):
+        return f"Тетраэдр (ребро={self.a}, плотность={self.density})"
+
+    
+    
+shapes = []
+
+for i in data:
+    shape_figure = i['figure']
+    if shape_figure == 'круг':
+        color = Color(i['color'])
+        cent = i['data']['cent']
+        r = i['data']['r']
+        shapes.append(Circle(color, cent, r))
+        
+    elif shape_figure == 'прямоугольник':
+        color = Color(i['color'])
+        top_left = i['data']['top_left']
+        bottom_right = i['data']['bottom_right']
+        shapes.append(Rectangle(color, top_left, bottom_right))
+        
+    elif shape_figure == 'треугольник':
+        color = Color(i['color'])
+        points = i['data']['points']
+        shapes.append(Triangle(color, points[0], points[1], points[2]))
+        
+    elif shape_figure == 'шар':
+        density = i['density']
+        r = i['data']['r']
+        shapes.append(Sphere(density, r))
+        
+    elif shape_figure == 'параллелепипед':
+        density = i['density']
+        dimensions = i['data']['dimensions']
+        shapes.append(Parallelepiped(density, dimensions[0], dimensions[1], dimensions[2]))
+        
+    elif shape_figure == 'правильный тетраэдр':
+        density = i['density']
+        edge_length = i['data']['edge_length']
+        shapes.append(Tetraedr(density, edge_length))
+
+
+def shell_sort(arr):
+    n = len(arr)
+    gap = n // 2
+    
+    while gap > 0:
+        for i in range(gap, n):
+            temp = arr[i]
+            j = i
+            while j >= gap and arr[j - gap] < temp:
+                arr[j] = arr[j - gap]
+                j -= gap
+            
+            arr[j] = temp
+        
+        gap //= 2
+    
+    return arr
+
+res = [i[1] for i in shell_sort([[s.area(), s] for s in shapes])]
+
+print(f"\nСОЗДАНО ФИГУР: {len(shapes)}\n")
+print("ДАННЫЕ ДО СОРТИРОВКИ: \n")
+for shape in shapes:
+    print(f"{shape}")
+    if hasattr(shape, 'area'):
+        print(f"  Площадь/Площадь поверхности: {shape.area():.2f}")
+    if hasattr(shape, 'perimetr'):
+        print(f"  Периметр: {shape.perimetr():.2f}")
+    if hasattr(shape, 'volume'):
+        print(f"  Объем: {shape.volume():.2f}")
+    print('\n')
+
+print("ДАННЫЕ ПОСЛЕ СОРТИРОВКИ ШЕЛЛА В ПОРЯДКЕ УБЫВАНИЯ: \n")
+for shape in res:
+    print(f"{shape}")
+    if hasattr(shape, 'area'):
+        print(f"  Площадь/Площадь поверхности: {shape.area():.2f}")
+    if hasattr(shape, 'perimetr'):
+        print(f"  Периметр: {shape.perimetr():.2f}")
+    if hasattr(shape, 'volume'):
+        print(f"  Объем: {shape.volume():.2f}")
+    print('\n')
+
+
+
+with open(r'C://Users/user/Desktop/result.txt', 'w') as f:
+    f.write('ИСХОДНЫЙ НАБОР ФИГУР:\n')
+    for shape in shapes:
+        f.write(f"{shape}\n")
+        if hasattr(shape, 'area'):
+            f.write(f"  Площадь/Площадь поверхности: {shape.area():.2f}\n")
+        if hasattr(shape, 'perimetr'):
+            f.write(f"  Периметр: {shape.perimetr():.2f}\n")
+        if hasattr(shape, 'volume'):
+            f.write(f"  Объем: {shape.volume():.2f}\n")
+        f.write('\n')
+    f.write(f'СОЗДАНО {len(shapes)} ФИГУР\n')
+    f.write('\n')
+    f.write('ОТСОРТИРОВАННЫЙ АЛГОРИТМОМ ШЕЛЛА В ПОРЯДКЕ УБЫВАНИЯ НАБОР ФИГУР: \n')
+    for shape in res:
+        f.write(f"{shape}\n")
+        if hasattr(shape, 'area'):
+            f.write(f"  Площадь/Площадь поверхности: {shape.area():.2f}\n")
+        if hasattr(shape, 'perimetr'):
+            f.write(f"  Периметр: {shape.perimetr():.2f}\n")
+        if hasattr(shape, 'volume'):
+            f.write(f"  Объем: {shape.volume():.2f}\n")
+        f.write('\n')
